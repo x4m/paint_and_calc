@@ -71,9 +71,8 @@ void loop() {
 }
 
 void DrawSelection() {
-  tft.fillCircle(120, 80, 30, PINK);
-  tft.fillCircle(120, 240, 30, PINK);
-  tft.drawLine(50,120,50,200,PINK);
+  tft.fillCircle(120, 80, 60, random(0xFFFF));
+  tft.fillCircle(120, 240, 60, random(0xFFFF));
   
   
   TSPoint p;
@@ -83,7 +82,7 @@ void DrawSelection() {
   p.x = map(p.x, TS_MINX, TS_MAXX, 0, tft.width());
   p.y = map(p.y, TS_MINY, TS_MAXY, 0, tft.height());
 
-  if (p.z > MINPRESSURE && p.z < MAXPRESSURE) 
+  if (p.z > MINPRESSURE) 
   {
     if (p.y<160) {
       mode = 1;
@@ -95,7 +94,7 @@ void DrawSelection() {
 
     }
   }
-  delay(200);
+  delay(100);
 }
 
 uint16_t current_color = 0;
@@ -113,8 +112,6 @@ TSPoint DrawPaint() {
 
       p.x = map(p.x, TS_MINX, TS_MAXX, 0, tft.width());
       p.y = map(p.y, TS_MINY, TS_MAXY, 0, tft.height());
-      //p.x = (p.x / 5) * 5;
-      //p.y = (p.y / 5) * 5;
 
       if (p.y<30)
         current_color = colors[p.x/30];
@@ -147,28 +144,7 @@ void IntroScreen()
   tft.setTextColor(GREEN);
   tft.println("Matvei");
   delay(1000);
-  tft.fillScreen(WHITE); 
-  DrawColorButtons();
+  tft.fillScreen(WHITE);
 }
 
-void DrawColorButtons() {
-  // tft.fillRect(0,0,5,5,BLACK);
-  // tft.fillRect(235,0,5,5,BLACK);
-  // tft.fillRect(235,315,5,5,BLACK);
-  // tft.fillRect(0,315,5,5,BLACK);
-  /*for (int x = 0; x < 240; x += 10) {
-    for (int y = 0; y < 320; y += 10) {
-      int color = GREEN;
-      if ((x+y)%20 == 0)
-      {
-        color = RED;
-      }
-      else
-      {
-        color = GREEN;
-      }
-      tft.fillRect(x,y,10,10,color);
-    }
-  }*/
-}
 
