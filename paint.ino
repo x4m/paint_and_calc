@@ -24,10 +24,10 @@
 #define MAXPRESSURE 1000
 
 /*____Calibrate TFT LCD_____*/
-short TS_MINX=920;
-short TS_MINY=120;
-short TS_MAXX=130;
-short TS_MAXY=940;
+short TS_MINX = 920;
+short TS_MINY = 120;
+short TS_MAXX = 130;
+short TS_MAXY = 940;
 /*______End of Calibration______*/
 TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);               //300 is the sensitivity
 Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);  //Start communication with LCD
@@ -50,8 +50,9 @@ void setup() {
   tft.setRotation(0);  // I just roated so that the power jack faces up - optional
   tft.fillScreen(WHITE);
   IntroScreen();
-  tft.fillCircle(120, 80, 60, random(0xFFFF));
-  tft.fillCircle(120, 240, 60, random(0xFFFF));
+  tft.fillCircle(120, 53, 50, random(0xFFFF));
+  tft.fillCircle(120, 159, 50, random(0xFFFF));
+  tft.fillCircle(120, 159 + 106, 50, random(0xFFFF));
 }
 
 int mode = 0;
@@ -66,30 +67,83 @@ void loop() {
     DrawSelection();
   } else if (mode == 2) {
     DrawCalc();
+  } else if (mode == 3) {
+    DrawArkanoid();
   } else {
     DrawPaint();
   }
 }
 
-void DrawSelection() {
+int platform = 240/2;
+int pl_wh = 240/8;
 
+int b_x = 240/2;
+int b_y = 320/5;
+int v_x = -2 + random(5);
+int v_y = -2 + random(5);
+uint16_t b_c = random(0xffff);
+
+void DrawArkanoid() {
+  TSPoint p = ReadPoint();
+  int np = p.x;
+  if (p.z > MINPRESSURE && np != platform) {
+    if (np < pl_wh)
+      np = pl_wh;
+    if (np >= 240 - pl_wh)
+      np = 239 - pl_wh;
+
+    tft.fillRect(platform-pl_wh, 310, 2*pl_wh, 10, WHITE);
+    tft.fillRect(np-pl_wh, 310, 2*pl_wh, 10, PINK);
+
+    platform = np;
+  }
+  
+  tft.drawCircle(b_x, b_y, 10, WHITE);
+  if (b_x + v_x < pl_wh) {
+    v_x = -v_x;
+  }
+  if (b_y + v_y < pl_wh) {
+    v_y = -v_y;
+  }
+  if (b_x + v_x > 240-pl_wh) {
+    v_x = -v_x;
+  }
+  if (b_y + v_y > 320 - pl_wh) {
+    v_y = -v_y;
+  }
+  b_x += v_x;
+  b_y += v_y;
+  tft.drawCircle(b_x, b_y, 10, b_c);
+
+  delay(1);
+}
+
+TSPoint ReadPoint() {
   TSPoint p;
   p = ts.getPoint();
   pinMode(XM, OUTPUT);
   pinMode(YP, OUTPUT);
   p.x = map(p.x, TS_MINX, TS_MAXX, 0, tft.width());
   p.y = map(p.y, TS_MINY, TS_MAXY, 0, tft.height());
+  return p;
+}
+
+void DrawSelection() {
+  TSPoint p = ReadPoint();
 
   if (p.z > MINPRESSURE) {
-    if (p.y < 160) {
+    if (p.y < 320 / 3) {
       mode = 1;
       tft.fillScreen(WHITE);
       for (int x = 0; x < ncolors; x++) {
         tft.fillRect(x * 30, 0, 30, 30, colors[x]);
       }
-    } else {
+    } else if (p.y < 2 * 320 / 3) {
       mode = 2;
       draw_BoxNButtons();
+    } else {
+      mode = 3;
+      tft.fillScreen(WHITE);
     }
   }
   delay(10);
@@ -121,11 +175,11 @@ TSPoint DrawPaint() {
         TSPoint p1 = prev_point;
         TSPoint p2 = p;
         tft.drawLine(p1.x, p1.y, p2.x, p2.y, current_color);
-        p1.x+=1;
-        p2.x+=1;
+        p1.x += 1;
+        p2.x += 1;
         tft.drawLine(p1.x, p1.y, p2.x, p2.y, current_color);
-        p1.y-=1;
-        p2.y-=1;
+        p1.y -= 1;
+        p2.y -= 1;
         tft.drawLine(p1.x, p1.y, p2.x, p2.y, current_color);
       }
       drawing = 25;
@@ -153,7 +207,7 @@ void IntroScreen() {
   tft.setCursor(50, 185);
   tft.setTextColor(CYAN);
   tft.println("Andrey");
-  
+
   delay(1000);
   tft.fillScreen(WHITE);
 }
