@@ -24,11 +24,10 @@
 #define MAXPRESSURE 1000
 
 /*____Calibrate TFT LCD_____*/
-
-#define TS_MINY 109
-#define TS_MINX 933
-#define TS_MAXY 940
-#define TS_MAXX 122
+short TS_MINX=920;
+short TS_MINY=120;
+short TS_MAXX=150;
+short TS_MAXY=940;
 /*______End of Calibration______*/
 TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);               //300 is the sensitivity
 Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);  //Start communication with LCD
