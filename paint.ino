@@ -50,12 +50,16 @@ void setup() {
   tft.setRotation(0);  // I just roated so that the power jack faces up - optional
   tft.fillScreen(WHITE);
   IntroScreen();
+  StartScreen();
+}
+int mode = 0;
+void StartScreen() {
   tft.fillCircle(120, 53, 50, random(0xFFFF));
   tft.fillCircle(120, 159, 50, random(0xFFFF));
   tft.fillCircle(120, 159 + 106, 50, random(0xFFFF));
+  mode = 0;
 }
 
-int mode = 0;
 
 // 0 - Selection mode
 // 1 - Paint mode
@@ -74,14 +78,15 @@ void loop() {
   }
 }
 
-int platform = 240/2;
-int pl_wh = 240/8;
+int platform = 240 / 2;
+int pl_wh = 240 / 8;
 
-int b_x = 240/2;
-int b_y = 320/5;
+int b_x = 240 / 2;
+int b_y = 320 / 5;
 int v_x = -2 + random(5);
-int v_y = -2 + random(5);
-uint16_t b_c = random(0xffff);
+int v_y = -2 + random(6);
+uint16_t b_c = BLUE;  //random(0xffff);
+int b_r = 10;
 
 void DrawArkanoid() {
   TSPoint p = ReadPoint();
@@ -92,30 +97,65 @@ void DrawArkanoid() {
     if (np >= 240 - pl_wh)
       np = 239 - pl_wh;
 
-    tft.fillRect(platform-pl_wh, 310, 2*pl_wh, 10, WHITE);
-    tft.fillRect(np-pl_wh, 310, 2*pl_wh, 10, PINK);
+    tft.fillRect(platform - pl_wh, 310, 2 * pl_wh, b_r, WHITE);
+    tft.fillRect(np - pl_wh, 310, 2 * pl_wh, b_r, PINK);
 
     platform = np;
   }
-  
+
+  // while (v_y == 0) {
+  //   v_y = -2 + random(5);
+  // }
+
   tft.drawCircle(b_x, b_y, 10, WHITE);
-  if (b_x + v_x < pl_wh) {
+  if (b_x + v_x < b_r) {
     v_x = -v_x;
   }
-  if (b_y + v_y < pl_wh) {
+  if (b_y + v_y < b_r) {
     v_y = -v_y;
   }
-  if (b_x + v_x > 240-pl_wh) {
+  if (b_x + v_x > 240 - b_r) {
     v_x = -v_x;
   }
-  if (b_y + v_y > 320 - pl_wh) {
-    v_y = -v_y;
+
+  if (((b_y + v_y) >= 310) && (abs(b_x + v_x - platform) <= pl_wh)) {
+    v_y = -2 - random(5);
+    do {
+    v_x = -2 + random(6);
+    } while (v_x == 0) ;
   }
+
+  if (b_y + v_y > 320 - b_r) {
+    b_x = 240 / 2;
+    b_y = 320 / 5;
+    v_x = -2 + random(5);
+    v_y = -2 + random(6);
+    StartScreen();
+    return;
+  }
+
   b_x += v_x;
   b_y += v_y;
+
   tft.drawCircle(b_x, b_y, 10, b_c);
 
   delay(1);
+}
+
+void StartArkanoid() {
+  tft.fillRect(platform - pl_wh, 310, 2 * pl_wh, b_r, PINK);
+
+  int nx = 5;
+  int wx = 240/nx;
+  int ny = 4;
+  int wy = 150 / ny;
+  int wp = 30;
+
+  for (int x = 0; x<nx; x++) {
+    for (int y = 0; y<ny; y++) {
+      tft.drawRect(x * wx + 2,wp+y*wy +2, wx-4,wy-4, PINK);
+    }
+  }
 }
 
 TSPoint ReadPoint() {
@@ -144,6 +184,7 @@ void DrawSelection() {
     } else {
       mode = 3;
       tft.fillScreen(WHITE);
+      StartArkanoid();
     }
   }
   delay(10);
