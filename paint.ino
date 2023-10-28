@@ -73,6 +73,9 @@ void loop() {
 void DrawSelection() {
   tft.fillCircle(120, 80, 30, PINK);
   tft.fillCircle(120, 240, 30, PINK);
+  tft.drawLine(50,120,50,200,PINK);
+  
+  
   TSPoint p;
   p = ts.getPoint();
   pinMode(XM, OUTPUT);
