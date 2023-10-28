@@ -26,7 +26,7 @@
 /*____Calibrate TFT LCD_____*/
 short TS_MINX=920;
 short TS_MINY=120;
-short TS_MAXX=150;
+short TS_MAXX=130;
 short TS_MAXY=940;
 /*______End of Calibration______*/
 TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);               //300 is the sensitivity
@@ -59,7 +59,7 @@ int mode = 0;
 // 0 - Selection mode
 // 1 - Paint mode
 // 2 - Calculator mode
-
+// 3 - Arkanoid mode
 
 void loop() {
   if (mode == 0) {
@@ -118,7 +118,15 @@ TSPoint DrawPaint() {
       if (drawing == 0) {
         //tft.fillRect(p.x-2,p.y-2,5,5,current_color);
       } else {
-        tft.drawLine(prev_point.x, prev_point.y, p.x, p.y, current_color);
+        TSPoint p1 = prev_point;
+        TSPoint p2 = p;
+        tft.drawLine(p1.x, p1.y, p2.x, p2.y, current_color);
+        p1.x+=1;
+        p2.x+=1;
+        tft.drawLine(p1.x, p1.y, p2.x, p2.y, current_color);
+        p1.y-=1;
+        p2.y-=1;
+        tft.drawLine(p1.x, p1.y, p2.x, p2.y, current_color);
       }
       drawing = 25;
       prev_point = p;
@@ -137,9 +145,15 @@ TSPoint DrawPaint() {
 void IntroScreen() {
   tft.setCursor(50, 115);
   tft.setTextSize(4);
-  tft.setTextColor(BLUE);
   tft.setTextColor(GREEN);
   tft.println("Matvei");
+  tft.setCursor(80, 145);
+  tft.setTextColor(BLUE);
+  tft.println("and");
+  tft.setCursor(50, 185);
+  tft.setTextColor(CYAN);
+  tft.println("Andrey");
+  
   delay(1000);
   tft.fillScreen(WHITE);
 }
