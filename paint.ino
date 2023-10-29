@@ -296,8 +296,6 @@ TSPoint DrawPaint() {
 void WinScreen() {
   tft.setCursor(50, 115);
   tft.setTextSize(4);
-  tft.setTextColor(GREEN);
-  tft.println("ПОБЕДА");
   tft.setCursor(80, 145);
   tft.setTextColor(BLUE);
   tft.println("WIN");
