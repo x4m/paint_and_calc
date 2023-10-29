@@ -82,13 +82,22 @@ int platform = 240 / 2;
 int pl_wh = 240 / 8;
 
 int b_x = 240 / 2;
-int b_y = 320 / 5;
+int b_y = 240;
 int v_x = -2 + random(5);
 int v_y = -2 + random(6);
 uint16_t b_c = BLUE;  //random(0xffff);
 int b_r = 10;
+int numbricks;
 
 void DrawArkanoid() {
+  if (numbricks == 0) {
+    WinScreen();
+    b_x = 240 / 2;
+    b_y = 240;
+    v_x = -2 + random(5);
+    v_y = -2 + random(6);
+    StartScreen();
+  }
   TSPoint p = ReadPoint();
   int np = p.x;
   if (p.z > MINPRESSURE && np != platform) {
@@ -103,9 +112,9 @@ void DrawArkanoid() {
     platform = np;
   }
 
-  // while (v_y == 0) {
-  //   v_y = -2 + random(5);
-  // }
+  while (v_y == 0) {
+    v_y = -2 + random(5);
+  }
 
   tft.drawCircle(b_x, b_y, 10, WHITE);
   if (b_x + v_x < b_r) {
@@ -118,20 +127,28 @@ void DrawArkanoid() {
     v_x = -v_x;
   }
 
-  if (((b_y + v_y) >= 310) && (abs(b_x + v_x - platform) <= pl_wh)) {
-    v_y = -2 - random(5);
+  if (((b_y + v_y) >= 300) && (abs(b_x + v_x - platform) <= pl_wh)) {
+    v_y = -1 - random(3);
     do {
-    v_x = -2 + random(6);
+    v_x = -2 + random(4);
     } while (v_x == 0) ;
   }
 
   if (b_y + v_y > 320 - b_r) {
     b_x = 240 / 2;
-    b_y = 320 / 5;
+    b_y = 240;
     v_x = -2 + random(5);
     v_y = -2 + random(6);
     StartScreen();
     return;
+  }
+
+  int collision = TestCollision(b_x,b_y,v_x,v_y);
+
+  if (collision == 1) {
+    v_x = -v_x;
+  } else if (collision == 2) {
+    v_y = -v_y;
   }
 
   b_x += v_x;
@@ -142,7 +159,46 @@ void DrawArkanoid() {
   delay(1);
 }
 
+bool bricks[5][4];
+
+void ClearBricks(){
+  for (int x = 0; x<5; x++) {
+    for (int y = 0; y<4; y++) {
+      bricks[x][y] = true;
+    }
+  }
+  numbricks = 5*4;
+}
+
+int TestCollision(int x, int y, int dx, int dy) {
+  int nx = 5;
+  int wx = 240/nx;
+  int ny = 4;
+  int wy = 150 / ny;
+  int wp = 30;
+
+  int tx = dx + x;
+  int ty = dy + y;
+  int lineno = (ty - wp);
+  if (lineno < 0)
+    return 0;
+  lineno /= wy;
+  int colno = tx / wx;
+  if (lineno > 3 || colno > 4)
+    return 0;
+  if (!bricks[colno][lineno])
+    return 0;
+  bricks[colno][lineno] = false; // We break the brick
+  tft.drawRect(colno * wx + 2,wp+lineno*wy +2, wx-4,wy-4, WHITE);
+  numbricks--;
+  int colx = colno * wx;
+  if (colx>x || colx+wx < x)
+    return 1; // Side reflection
+  return 2; // Horizontal reflection
+}
+
 void StartArkanoid() {
+  ClearBricks();
   tft.fillRect(platform - pl_wh, 310, 2 * pl_wh, b_r, PINK);
 
   int nx = 5;
@@ -236,6 +292,20 @@ TSPoint DrawPaint() {
   delay(10);
 }
 
+
+void WinScreen() {
+  tft.setCursor(50, 115);
+  tft.setTextSize(4);
+  tft.setTextColor(GREEN);
+  tft.println("ПОБЕДА");
+  tft.setCursor(80, 145);
+  tft.setTextColor(BLUE);
+  tft.println("WIN");
+  tft.setCursor(50, 185);
+
+  delay(1000);
+  tft.fillScreen(WHITE);
+}
 
 void IntroScreen() {
   tft.setCursor(50, 115);
