@@ -115,8 +115,8 @@ void StartSnake() {
       SnakePixel(x, y, false);
     }
 
-  s_x = 1;
-  s_y = 0;
+  s_x = 0;
+  s_y = 1;
   s_l = 0;
   for (int i = 0; i < 4; i++) {
     snake[i].x = 12;
@@ -185,6 +185,7 @@ void DrawSnake() {
 
     for (int i=1;i<s_l;i++) {
       if (snake[i].x == next.x && snake[i].y==next.y) {
+        tft.fillScreen(WHITE);
         StartScreen();
         return;
       }
@@ -200,6 +201,7 @@ void DrawSnake() {
     }
 
     if (next.x < 0 || next.y <0 || next.x>=24 || next.y >=32) {
+      tft.fillScreen(WHITE);
       StartScreen();
       return;
     }
