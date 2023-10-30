@@ -117,6 +117,7 @@ void StartSnake() {
 
   s_x = 1;
   s_y = 0;
+  s_l = 0;
   for (int i = 0; i < 4; i++) {
     snake[i].x = 12;
     snake[i].y = 12 - i;
@@ -145,7 +146,6 @@ void SnakeDetect() {
   TSPoint p = ReadPoint();
   int np = p.x;
   if (p.z > MINPRESSURE) {
-    random();
     int o_x = s_x;
     int o_y = s_y;
     if (p.x > (6 * p.y) / 8) {
@@ -183,6 +183,13 @@ void DrawSnake() {
     next.x = snake[0].x + s_x;
     next.y = snake[0].y + s_y;
 
+    for (int i=1;i<s_l;i++) {
+      if (snake[i].x == next.x && snake[i].y==next.y) {
+        StartScreen();
+        return;
+      }
+    }
+
     if (food.x == next.x && food.y == next.y)
     {
       s_l++;
@@ -190,6 +197,11 @@ void DrawSnake() {
     }
     else {
       SnakePixel(snake[s_l - 1].x, snake[s_l - 1].y, false);
+    }
+
+    if (next.x < 0 || next.y <0 || next.x>=24 || next.y >=32) {
+      StartScreen();
+      return;
     }
 
     SnakePixel(next.x, next.y, true);
