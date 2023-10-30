@@ -232,6 +232,17 @@ void Draw2048() {
   DrawField();
   TSPoint p;
   p.z = 0;
+  bool nonzero = false;
+  for (int i = 0; i < 4; i++)
+    for (int o = 0; o < 4; o++)
+      if (field[i][o] == 0)
+        nonzero = true;
+  if (!nonzero) {
+    delay(1000);
+    mode = 0;
+    StartScreen();
+    return;
+  }
   while (p.z < MINPRESSURE)
     p = ReadPoint();
 
@@ -258,17 +269,6 @@ void Draw2048() {
     if (field[i][o] == 0) {
       field[i][o] = 2;
       break;
-    }
-    bool nonzero = false;
-    for (i = 0; i < 4; i++)
-      for (o = 0; o < 4; o++)
-        if (field[i][o] == 0)
-          nonzero = true;
-    if (!nonzero) {
-      delay(1000);
-      mode = 0;
-      StartScreen();
-      return;
     }
   }
 }
