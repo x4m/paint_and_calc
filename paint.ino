@@ -82,44 +82,82 @@ void loop() {
   }
 }
 
-void StartSnake() {
-  for (int x = 0 ; x< 24; x+=1)
-    for (int y = 0; y < 32; y+=1) {
-      SnakePixel(x,y,false);
+struct SnakePoint {
+  uint16_t x;
+  uint16_t y;
+};
+
+SnakePoint snake[100];
+int s_l;
+int s_x;
+int s_y;
+int snake_frame;
+SnakePoint food;
+
+void GenerateFood() {
+  while (true) {
+    int x = random(24);
+    int y = random(24);
+    for (int i = 0; i < s_l; i++) {
+      if (snake[i].x == x && snake[i].y == y)
+        continue;
     }
+    food.x = x;
+    food.y = y;
+    FoodPixel(x,y);
+    return;
+  }
+}
+
+void StartSnake() {
+  for (int x = 0; x < 24; x += 1)
+    for (int y = 0; y < 32; y += 1) {
+      SnakePixel(x, y, false);
+    }
+
+  s_x = 1;
+  s_y = 0;
+  for (int i = 0; i < 4; i++) {
+    snake[i].x = 12;
+    snake[i].y = 12 - i;
+    SnakePixel(snake[i].x, snake[i].y, true);
+    s_l++;
+  }
+  snake_frame = 0;
+  GenerateFood();
 }
 
 #define HOROSHIY_ZVET 0x373F
 
 void SnakePixel(int x, int y, bool snake) {
   uint16_t color = PINK;
-  if ((x+y)%2 == 0)
+  if ((x + y) % 2 == 0)
     color = CYAN;
   if (snake)
     color = HOROSHIY_ZVET;
-  tft.fillRect(x*10, y*10, 10, 10, color);
+  tft.fillRect(x * 10, y * 10, 10, 10, color);
+}
+void FoodPixel(int x, int y) {
+  tft.fillRect(x * 10, y * 10, 10, 10, BLUE);
 }
 
-
-int s_x;
-int s_y;
 void SnakeDetect() {
   TSPoint p = ReadPoint();
   int np = p.x;
   if (p.z > MINPRESSURE) {
-    if (p.x>(6*p.y)/8) {
-      if (p.x<240-((6*p.y)/8))
-      {
+    random();
+    int o_x = s_x;
+    int o_y = s_y;
+    if (p.x > (6 * p.y) / 8) {
+      if (p.x < 240 - ((6 * p.y) / 8)) {
         s_x = 0;
         s_y = -1;
       } else {
         s_x = 1;
         s_y = 0;
       }
-    }
-    else{
-      if (p.x<240-((6*p.y)/8))
-      {
+    } else {
+      if (p.x < 240 - ((6 * p.y) / 8)) {
         s_x = -1;
         s_y = 0;
       } else {
@@ -127,35 +165,43 @@ void SnakeDetect() {
         s_y = 1;
       }
     }
-    // if (p.x>(240*p.y/320) && p.x < (240 - (240*p.y/320))) {
-    //   s_x = -1;
-    //   s_y = 0;
-    // }
-    // else if (p.x<(240*p.y/320) && p.x < (240 - (240*p.y/320))) {
-    //   s_x = 0;
-    //   s_y = -1;
-    // }
-    // else if (p.x<(240*p.y/320) && p.x > (240 - (240*p.y/320))) {
-    //   s_x = 0;
-    //   s_y = 1;
-    // }
-    // else {
-    //   s_x = -1;
-    //   s_y = 0;
-    // }
+    SnakePoint next = { snake[0].x + s_x, snake[0].y + s_y };
+    if (next.x == snake[1].x && next.y == snake[1].y) {
+      s_x = o_x;
+      s_y = o_y;
+    }
   }
 }
 
 void DrawSnake() {
+  snake_frame++;
   SnakeDetect();
-
-  SnakePixel(10,11,false);
-  SnakePixel(11,10,false);
-  SnakePixel(9,10,false);
-  SnakePixel(10,9,false);
-  
-  SnakePixel(10+s_x,10+s_y,true);
   delay(10);
+  if (snake_frame % 32 == 0) {
+    SnakePoint next;
+    bool regen = false;
+    next.x = snake[0].x + s_x;
+    next.y = snake[0].y + s_y;
+
+    if (food.x == next.x && food.y == next.y)
+    {
+      s_l++;
+      regen = true;
+    }
+    else {
+      SnakePixel(snake[s_l - 1].x, snake[s_l - 1].y, false);
+    }
+
+    SnakePixel(next.x, next.y, true);
+    for (int i = s_l - 1; i > 0; i--) {
+      snake[i] = snake[i - 1];
+    }
+    snake[0] = next;
+    if (regen)
+      GenerateFood();
+    else
+      FoodPixel(food.x,food.y); // Redraw for debug purposes
+  }
 }
 
 int platform = 240 / 2;
@@ -210,8 +256,8 @@ void DrawArkanoid() {
   if (((b_y + v_y) >= 300) && (abs(b_x + v_x - platform) <= pl_wh)) {
     v_y = -1 - random(3);
     do {
-    v_x = -2 + random(4);
-    } while (v_x == 0) ;
+      v_x = -2 + random(4);
+    } while (v_x == 0);
   }
 
   if (b_y + v_y > 320 - b_r) {
@@ -223,7 +269,7 @@ void DrawArkanoid() {
     return;
   }
 
-  int collision = TestCollision(b_x,b_y,v_x,v_y);
+  int collision = TestCollision(b_x, b_y, v_x, v_y);
 
   if (collision == 1) {
     v_x = -v_x;
@@ -241,18 +287,18 @@ void DrawArkanoid() {
 
 bool bricks[5][4];
 
-void ClearBricks(){
-  for (int x = 0; x<5; x++) {
-    for (int y = 0; y<4; y++) {
+void ClearBricks() {
+  for (int x = 0; x < 5; x++) {
+    for (int y = 0; y < 4; y++) {
       bricks[x][y] = true;
     }
   }
-  numbricks = 5*4;
+  numbricks = 5 * 4;
 }
 
 int TestCollision(int x, int y, int dx, int dy) {
   int nx = 5;
-  int wx = 240/nx;
+  int wx = 240 / nx;
   int ny = 4;
   int wy = 150 / ny;
   int wp = 30;
@@ -268,13 +314,13 @@ int TestCollision(int x, int y, int dx, int dy) {
     return 0;
   if (!bricks[colno][lineno])
     return 0;
-  bricks[colno][lineno] = false; // We break the brick
-  tft.drawRect(colno * wx + 2,wp+lineno*wy +2, wx-4,wy-4, WHITE);
+  bricks[colno][lineno] = false;  // We break the brick
+  tft.drawRect(colno * wx + 2, wp + lineno * wy + 2, wx - 4, wy - 4, WHITE);
   numbricks--;
   int colx = colno * wx;
-  if (colx>x || colx+wx < x)
-    return 1; // Side reflection
-  return 2; // Horizontal reflection
+  if (colx > x || colx + wx < x)
+    return 1;  // Side reflection
+  return 2;    // Horizontal reflection
 }
 
 void StartArkanoid() {
@@ -282,14 +328,14 @@ void StartArkanoid() {
   tft.fillRect(platform - pl_wh, 310, 2 * pl_wh, b_r, PINK);
 
   int nx = 5;
-  int wx = 240/nx;
+  int wx = 240 / nx;
   int ny = 4;
   int wy = 150 / ny;
   int wp = 30;
 
-  for (int x = 0; x<nx; x++) {
-    for (int y = 0; y<ny; y++) {
-      tft.drawRect(x * wx + 2,wp+y*wy +2, wx-4,wy-4, PINK);
+  for (int x = 0; x < nx; x++) {
+    for (int y = 0; y < ny; y++) {
+      tft.drawRect(x * wx + 2, wp + y * wy + 2, wx - 4, wy - 4, PINK);
     }
   }
 }
@@ -326,6 +372,7 @@ void DrawSelection() {
       StartSnake();
     }
   }
+  random(); // hack to get entropy
   delay(10);
 }
 
