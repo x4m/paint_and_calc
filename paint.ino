@@ -54,9 +54,10 @@ void setup() {
 }
 int mode = 0;
 void StartScreen() {
-  tft.fillCircle(120, 53, 50, random(0xFFFF));
-  tft.fillCircle(120, 159, 50, random(0xFFFF));
-  tft.fillCircle(120, 159 + 106, 50, random(0xFFFF));
+  tft.fillCircle(120, 40, 35, random(0xFFFF));
+  tft.fillCircle(120, 120, 35, random(0xFFFF));
+  tft.fillCircle(120, 200, 35, random(0xFFFF));
+  tft.fillCircle(120, 280, 35, random(0xFFFF));
   mode = 0;
 }
 
@@ -65,6 +66,7 @@ void StartScreen() {
 // 1 - Paint mode
 // 2 - Calculator mode
 // 3 - Arkanoid mode
+// 4 - Flappy bird
 
 void loop() {
   if (mode == 0) {
@@ -73,9 +75,87 @@ void loop() {
     DrawCalc();
   } else if (mode == 3) {
     DrawArkanoid();
+  } else if (mode == 4) {
+    DrawSnake();
   } else {
     DrawPaint();
   }
+}
+
+void StartSnake() {
+  for (int x = 0 ; x< 24; x+=1)
+    for (int y = 0; y < 32; y+=1) {
+      SnakePixel(x,y,false);
+    }
+}
+
+#define HOROSHIY_ZVET 0x373F
+
+void SnakePixel(int x, int y, bool snake) {
+  uint16_t color = PINK;
+  if ((x+y)%2 == 0)
+    color = CYAN;
+  if (snake)
+    color = HOROSHIY_ZVET;
+  tft.fillRect(x*10, y*10, 10, 10, color);
+}
+
+
+int s_x;
+int s_y;
+void SnakeDetect() {
+  TSPoint p = ReadPoint();
+  int np = p.x;
+  if (p.z > MINPRESSURE) {
+    if (p.x>(6*p.y)/8) {
+      if (p.x<240-((6*p.y)/8))
+      {
+        s_x = 0;
+        s_y = -1;
+      } else {
+        s_x = 1;
+        s_y = 0;
+      }
+    }
+    else{
+      if (p.x<240-((6*p.y)/8))
+      {
+        s_x = -1;
+        s_y = 0;
+      } else {
+        s_x = 0;
+        s_y = 1;
+      }
+    }
+    // if (p.x>(240*p.y/320) && p.x < (240 - (240*p.y/320))) {
+    //   s_x = -1;
+    //   s_y = 0;
+    // }
+    // else if (p.x<(240*p.y/320) && p.x < (240 - (240*p.y/320))) {
+    //   s_x = 0;
+    //   s_y = -1;
+    // }
+    // else if (p.x<(240*p.y/320) && p.x > (240 - (240*p.y/320))) {
+    //   s_x = 0;
+    //   s_y = 1;
+    // }
+    // else {
+    //   s_x = -1;
+    //   s_y = 0;
+    // }
+  }
+}
+
+void DrawSnake() {
+  SnakeDetect();
+
+  SnakePixel(10,11,false);
+  SnakePixel(11,10,false);
+  SnakePixel(9,10,false);
+  SnakePixel(10,9,false);
+  
+  SnakePixel(10+s_x,10+s_y,true);
+  delay(10);
 }
 
 int platform = 240 / 2;
@@ -228,19 +308,22 @@ void DrawSelection() {
   TSPoint p = ReadPoint();
 
   if (p.z > MINPRESSURE) {
-    if (p.y < 320 / 3) {
+    if (p.y < 320 / 4) {
       mode = 1;
       tft.fillScreen(WHITE);
       for (int x = 0; x < ncolors; x++) {
         tft.fillRect(x * 30, 0, 30, 30, colors[x]);
       }
-    } else if (p.y < 2 * 320 / 3) {
+    } else if (p.y < 2 * 320 / 4) {
       mode = 2;
       draw_BoxNButtons();
-    } else {
+    } else if (p.y < 3 * 320 / 4) {
       mode = 3;
       tft.fillScreen(WHITE);
       StartArkanoid();
+    } else {
+      mode = 4;
+      StartSnake();
     }
   }
   delay(10);
