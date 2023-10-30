@@ -54,10 +54,11 @@ void setup() {
 }
 int mode = 0;
 void StartScreen() {
-  tft.fillCircle(120, 40, 35, random(0xFFFF));
-  tft.fillCircle(120, 120, 35, random(0xFFFF));
-  tft.fillCircle(120, 200, 35, random(0xFFFF));
-  tft.fillCircle(120, 280, 35, random(0xFFFF));
+  tft.fillCircle(60, 40, 35, random(0xFFFF));
+  tft.fillCircle(60, 120, 35, random(0xFFFF));
+  tft.fillCircle(60, 200, 35, random(0xFFFF));
+  tft.fillCircle(60, 280, 35, random(0xFFFF));
+  tft.fillCircle(180, 40, 35, random(0xFFFF));
   mode = 0;
 }
 
@@ -66,7 +67,8 @@ void StartScreen() {
 // 1 - Paint mode
 // 2 - Calculator mode
 // 3 - Arkanoid mode
-// 4 - Flappy bird
+// 4 - Snake
+// 5 - 2048
 
 void loop() {
   if (mode == 0) {
@@ -77,8 +79,197 @@ void loop() {
     DrawArkanoid();
   } else if (mode == 4) {
     DrawSnake();
+  } else if (mode == 5) {
+    Draw2048();
   } else {
     DrawPaint();
+  }
+}
+
+
+int field[4][4];
+void SeedField() {
+  for (int i = 0; i < 4; i++)
+    for (int o = 0; o < 4; o++) {
+      int p = random(6);
+      if (p <= 1)
+        field[i][o] = 0;
+      else
+        field[i][o] = 1 << (p - 1);
+    }
+}
+
+void DrawField() {
+  tft.setTextColor(BLUE);
+  for (int i = 0; i < 4; i++)
+    for (int o = 0; o < 4; o++) {
+      tft.fillRect(60 * i + 1, 60 * o + 40 + 1, 58, 58, ~RED);
+      tft.setCursor(60 * i + 10, 60 * o + 40 + 10);
+      if (field[i][o]) {
+        if (field[i][o] > 512)
+          tft.setTextSize(1);
+        else if (field[i][o] > 64)
+          tft.setTextSize(2);
+        else
+          tft.setTextSize(4);
+        tft.print(field[i][o]);
+      }
+    }
+}
+
+bool ShiftUp() {
+  bool result = false;
+  for (int i = 0; i < 4; i++) {
+    for (int o = 0; o < 4; o++) {
+      if (field[i][o] == 0) {
+        int z = o + 1;
+        for (; z < 4; z++) {
+          if (field[i][z] != 0) {
+            field[i][o] = field[i][z];
+            field[i][z] = 0;
+            o--;
+            result = true;
+            break;
+          }
+        }
+      } else {
+        if (o > 0 && field[i][o] == field[i][o - 1]) {
+          field[i][o - 1] *= 2;
+          field[i][o] = 0;
+          result = true;
+          o--;
+        }
+      }
+    }
+  }
+  return result;
+}
+bool ShiftLeft() {
+  bool result = false;
+  for (int i = 0; i < 4; i++) {
+    for (int o = 0; o < 4; o++) {
+      if (field[o][i] == 0) {
+        int z = o + 1;
+        for (; z < 4; z++) {
+          if (field[z][i] != 0) {
+            field[o][i] = field[z][i];
+            field[z][i] = 0;
+            result = true;
+            o--;
+            break;
+          }
+        }
+      } else {
+        if (o > 0 && field[o][i] == field[o - 1][i]) {
+          field[o - 1][i] *= 2;
+          field[o][i] = 0;
+          result = true;
+          o--;
+        }
+      }
+    }
+  }
+  return result;
+}
+bool ShiftDown() {
+  bool result = false;
+  for (int i = 0; i < 4; i++) {
+    for (int o = 0; o < 4; o++) {
+      if (field[i][3 - o] == 0) {
+        int z = o + 1;
+        for (; z < 4; z++) {
+          if (field[i][3 - z] != 0) {
+            field[i][3 - o] = field[i][3 - z];
+            field[i][3 - z] = 0;
+            o--;
+            result = true;
+            break;
+          }
+        }
+      } else {
+        if (o > 0 && field[i][3 - o] == field[i][3 - (o - 1)]) {
+          field[i][3 - (o - 1)] *= 2;
+          field[i][3 - o] = 0;
+          result = true;
+          o--;
+        }
+      }
+    }
+  }
+  return result;
+}
+
+
+bool ShiftRight() {
+  bool result = false;
+  for (int i = 0; i < 4; i++) {
+    for (int o = 0; o < 4; o++) {
+      if (field[3 - o][i] == 0) {
+        int z = o + 1;
+        for (; z < 4; z++) {
+          if (field[3 - z][i] != 0) {
+            field[3 - o][i] = field[3 - z][i];
+            field[3 - z][i] = 0;
+            o--;
+            result = true;
+            break;
+          }
+        }
+      } else {
+        if (o > 0 && field[3 - o][i] == field[3 - (o - 1)][i]) {
+          field[3 - (o - 1)][i] *= 2;
+          field[3 - o][i] = 0;
+          result = true;
+          o--;
+        }
+      }
+    }
+  }
+  return result;
+}
+
+void Draw2048() {
+  DrawField();
+  TSPoint p;
+  p.z = 0;
+  while (p.z < MINPRESSURE)
+    p = ReadPoint();
+
+  if (p.x > (6 * p.y) / 8) {
+    if (p.x < 240 - ((6 * p.y) / 8)) {
+      if (!ShiftUp())
+        return;
+    } else {
+      if (!ShiftRight())
+        return;
+    }
+  } else {
+    if (p.x < 240 - ((6 * p.y) / 8)) {
+      if (!ShiftLeft())
+        return;
+    } else {
+      if (!ShiftDown())
+        return;
+    }
+  }
+  while (true) {
+    int i = random(4);
+    int o = random(4);
+    if (field[i][o] == 0) {
+      field[i][o] = 2;
+      break;
+    }
+    bool nonzero = false;
+    for (i = 0; i < 4; i++)
+      for (o = 0; o < 4; o++)
+        if (field[i][o] == 0)
+          nonzero = true;
+    if (!nonzero) {
+      delay(1000);
+      mode = 0;
+      StartScreen();
+      return;
+    }
   }
 }
 
@@ -104,7 +295,7 @@ void GenerateFood() {
     }
     food.x = x;
     food.y = y;
-    FoodPixel(x,y);
+    FoodPixel(x, y);
     return;
   }
 }
@@ -139,7 +330,7 @@ void SnakePixel(int x, int y, bool snake) {
   tft.fillRect(x * 10, y * 10, 10, 10, color);
 }
 void FoodPixel(int x, int y) {
-  tft.fillRect(x * 10, y * 10, 10, 10, BLUE);
+  tft.fillRect(x * 10, y * 10, 10, 10, HOROSHIY_ZVET);
 }
 
 void SnakeDetect() {
@@ -183,24 +374,22 @@ void DrawSnake() {
     next.x = snake[0].x + s_x;
     next.y = snake[0].y + s_y;
 
-    for (int i=1;i<s_l;i++) {
-      if (snake[i].x == next.x && snake[i].y==next.y) {
+    for (int i = 1; i < s_l; i++) {
+      if (snake[i].x == next.x && snake[i].y == next.y) {
         tft.fillScreen(WHITE);
         StartScreen();
         return;
       }
     }
 
-    if (food.x == next.x && food.y == next.y)
-    {
+    if (food.x == next.x && food.y == next.y) {
       s_l++;
       regen = true;
-    }
-    else {
+    } else {
       SnakePixel(snake[s_l - 1].x, snake[s_l - 1].y, false);
     }
 
-    if (next.x < 0 || next.y <0 || next.x>=24 || next.y >=32) {
+    if (next.x < 0 || next.y < 0 || next.x >= 24 || next.y >= 32) {
       tft.fillScreen(WHITE);
       StartScreen();
       return;
@@ -214,7 +403,7 @@ void DrawSnake() {
     if (regen)
       GenerateFood();
     else
-      FoodPixel(food.x,food.y); // Redraw for debug purposes
+      FoodPixel(food.x, food.y);  // Redraw for debug purposes
   }
 }
 
@@ -368,25 +557,33 @@ void DrawSelection() {
   TSPoint p = ReadPoint();
 
   if (p.z > MINPRESSURE) {
-    if (p.y < 320 / 4) {
-      mode = 1;
-      tft.fillScreen(WHITE);
-      for (int x = 0; x < ncolors; x++) {
-        tft.fillRect(x * 30, 0, 30, 30, colors[x]);
+    if (p.x <= 120) {
+      if (p.y < 320 / 4) {
+        mode = 1;
+        tft.fillScreen(WHITE);
+        for (int x = 0; x < ncolors; x++) {
+          tft.fillRect(x * 30, 0, 30, 30, colors[x]);
+        }
+      } else if (p.y < 2 * 320 / 4) {
+        mode = 2;
+        draw_BoxNButtons();
+      } else if (p.y < 3 * 320 / 4) {
+        mode = 3;
+        tft.fillScreen(WHITE);
+        StartArkanoid();
+      } else {
+        mode = 4;
+        StartSnake();
       }
-    } else if (p.y < 2 * 320 / 4) {
-      mode = 2;
-      draw_BoxNButtons();
-    } else if (p.y < 3 * 320 / 4) {
-      mode = 3;
-      tft.fillScreen(WHITE);
-      StartArkanoid();
     } else {
-      mode = 4;
-      StartSnake();
+      if (p.y < 320 / 4) {
+        mode = 5;
+        SeedField();
+        tft.fillScreen(WHITE);
+      }
     }
   }
-  random(); // hack to get entropy
+  random();  // hack to get entropy
   delay(10);
 }
 
