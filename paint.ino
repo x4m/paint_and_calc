@@ -86,11 +86,12 @@ void loop() {
   }
 }
 
+#define N2 5
 
-int field[4][4];
+int field[N2][N2];
 void SeedField() {
-  for (int i = 0; i < 4; i++)
-    for (int o = 0; o < 4; o++) {
+  for (int i = 0; i < N2; i++)
+    for (int o = 0; o < N2; o++) {
       int p = random(6);
       if (p <= 1)
         field[i][o] = 0;
@@ -101,17 +102,19 @@ void SeedField() {
 
 void DrawField() {
   tft.setTextColor(BLUE);
-  for (int i = 0; i < 4; i++)
-    for (int o = 0; o < 4; o++) {
-      tft.fillRect(60 * i + 1, 60 * o + 40 + 1, 58, 58, ~RED);
-      tft.setCursor(60 * i + 10, 60 * o + 40 + 10);
+  int rsize = 240 / N2;
+  int shift = N2>4?10:2;
+  for (int i = 0; i < N2; i++)
+    for (int o = 0; o < N2; o++) {
+      tft.fillRect(rsize * i + 1, rsize * o + 40 + 1, rsize - 2, rsize - 2, ~RED);
+      tft.setCursor(rsize * i + shift, rsize * o + 40 + shift);
       if (field[i][o]) {
         if (field[i][o] > 512)
           tft.setTextSize(1);
         else if (field[i][o] > 64)
           tft.setTextSize(2);
         else
-          tft.setTextSize(4);
+          tft.setTextSize(N2>4?3:4);
         tft.print(field[i][o]);
       }
     }
@@ -119,11 +122,11 @@ void DrawField() {
 
 bool ShiftUp() {
   bool result = false;
-  for (int i = 0; i < 4; i++) {
-    for (int o = 0; o < 4; o++) {
+  for (int i = 0; i < N2; i++) {
+    for (int o = 0; o < N2; o++) {
       if (field[i][o] == 0) {
         int z = o + 1;
-        for (; z < 4; z++) {
+        for (; z < N2; z++) {
           if (field[i][z] != 0) {
             field[i][o] = field[i][z];
             field[i][z] = 0;
@@ -146,11 +149,11 @@ bool ShiftUp() {
 }
 bool ShiftLeft() {
   bool result = false;
-  for (int i = 0; i < 4; i++) {
-    for (int o = 0; o < 4; o++) {
+  for (int i = 0; i < N2; i++) {
+    for (int o = 0; o < N2; o++) {
       if (field[o][i] == 0) {
         int z = o + 1;
-        for (; z < 4; z++) {
+        for (; z < N2; z++) {
           if (field[z][i] != 0) {
             field[o][i] = field[z][i];
             field[z][i] = 0;
@@ -173,23 +176,23 @@ bool ShiftLeft() {
 }
 bool ShiftDown() {
   bool result = false;
-  for (int i = 0; i < 4; i++) {
-    for (int o = 0; o < 4; o++) {
-      if (field[i][3 - o] == 0) {
+  for (int i = 0; i < N2; i++) {
+    for (int o = 0; o < N2; o++) {
+      if (field[i][N2 - 1 - o] == 0) {
         int z = o + 1;
-        for (; z < 4; z++) {
-          if (field[i][3 - z] != 0) {
-            field[i][3 - o] = field[i][3 - z];
-            field[i][3 - z] = 0;
+        for (; z < N2; z++) {
+          if (field[i][N2 - 1 - z] != 0) {
+            field[i][N2 - 1 - o] = field[i][N2 - 1 - z];
+            field[i][N2 - 1 - z] = 0;
             o--;
             result = true;
             break;
           }
         }
       } else {
-        if (o > 0 && field[i][3 - o] == field[i][3 - (o - 1)]) {
-          field[i][3 - (o - 1)] *= 2;
-          field[i][3 - o] = 0;
+        if (o > 0 && field[i][N2 - 1 - o] == field[i][N2 - 1 - (o - 1)]) {
+          field[i][N2 - 1 - (o - 1)] *= 2;
+          field[i][N2 - 1 - o] = 0;
           result = true;
           o--;
         }
@@ -202,23 +205,23 @@ bool ShiftDown() {
 
 bool ShiftRight() {
   bool result = false;
-  for (int i = 0; i < 4; i++) {
-    for (int o = 0; o < 4; o++) {
-      if (field[3 - o][i] == 0) {
+  for (int i = 0; i < N2; i++) {
+    for (int o = 0; o < N2; o++) {
+      if (field[N2 - 1 - o][i] == 0) {
         int z = o + 1;
-        for (; z < 4; z++) {
-          if (field[3 - z][i] != 0) {
-            field[3 - o][i] = field[3 - z][i];
-            field[3 - z][i] = 0;
+        for (; z < N2; z++) {
+          if (field[N2 - 1 - z][i] != 0) {
+            field[N2 - 1 - o][i] = field[N2 - 1 - z][i];
+            field[N2 - 1 - z][i] = 0;
             o--;
             result = true;
             break;
           }
         }
       } else {
-        if (o > 0 && field[3 - o][i] == field[3 - (o - 1)][i]) {
-          field[3 - (o - 1)][i] *= 2;
-          field[3 - o][i] = 0;
+        if (o > 0 && field[N2 - 1 - o][i] == field[N2 - 1 - (o - 1)][i]) {
+          field[N2 - 1 - (o - 1)][i] *= 2;
+          field[N2 - 1 - o][i] = 0;
           result = true;
           o--;
         }
@@ -233,8 +236,8 @@ void Draw2048() {
   TSPoint p;
   p.z = 0;
   bool nonzero = false;
-  for (int i = 0; i < 4; i++)
-    for (int o = 0; o < 4; o++)
+  for (int i = 0; i < N2; i++)
+    for (int o = 0; o < N2; o++)
       if (field[i][o] == 0)
         nonzero = true;
   if (!nonzero) {
@@ -264,8 +267,8 @@ void Draw2048() {
     }
   }
   while (true) {
-    int i = random(4);
-    int o = random(4);
+    int i = random(N2);
+    int o = random(N2);
     if (field[i][o] == 0) {
       field[i][o] = 2;
       break;
