@@ -93,7 +93,7 @@ void SeedField() {
   for (int i = 0; i < N2; i++)
     for (int o = 0; o < N2; o++) {
       if (random(4) != 2)
-        continue;
+       continue;
       int p = random(5);
       if (p <= 1)
         field[i][o] = 0;
@@ -238,10 +238,19 @@ void Draw2048() {
   TSPoint p;
   p.z = 0;
   bool nonzero = false;
+  bool win = false;
   for (int i = 0; i < N2; i++)
-    for (int o = 0; o < N2; o++)
+    for (int o = 0; o < N2; o++) {
+      if (field[i][o] >= 2048)
+        win = true;
       if (field[i][o] == 0)
         nonzero = true;
+    }
+  if (win) {
+    WinScreen();
+    StartScreen();
+    return;
+  }
   if (!nonzero) {
     for (int i = 1; i < N2; i++)
       for (int o = 1; o < N2; o++) {
