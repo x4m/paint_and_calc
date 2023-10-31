@@ -86,13 +86,15 @@ void loop() {
   }
 }
 
-#define N2 5
+#define N2 4
 
 int field[N2][N2];
 void SeedField() {
   for (int i = 0; i < N2; i++)
     for (int o = 0; o < N2; o++) {
-      int p = random(6);
+      if (random(4) != 2)
+        continue;
+      int p = random(5);
       if (p <= 1)
         field[i][o] = 0;
       else
@@ -103,7 +105,7 @@ void SeedField() {
 void DrawField() {
   tft.setTextColor(BLUE);
   int rsize = 240 / N2;
-  int shift = N2>4?10:2;
+  int shift = N2 > 4 ? 10 : 2;
   for (int i = 0; i < N2; i++)
     for (int o = 0; o < N2; o++) {
       tft.fillRect(rsize * i + 1, rsize * o + 40 + 1, rsize - 2, rsize - 2, ~RED);
@@ -114,7 +116,7 @@ void DrawField() {
         else if (field[i][o] > 64)
           tft.setTextSize(2);
         else
-          tft.setTextSize(N2>4?3:4);
+          tft.setTextSize(N2 > 4 ? 3 : 4);
         tft.print(field[i][o]);
       }
     }
@@ -240,6 +242,15 @@ void Draw2048() {
     for (int o = 0; o < N2; o++)
       if (field[i][o] == 0)
         nonzero = true;
+  if (!nonzero) {
+    for (int i = 1; i < N2; i++)
+      for (int o = 1; o < N2; o++) {
+        if (field[i][o] == field[i - 1][o] || field[i][o] == field[i][o - 1])
+          nonzero = true;
+      }
+    if (field[0][0] == field[1][0] || field[0][0] == field[0][1])
+      nonzero = true;
+  }
   if (!nonzero) {
     delay(1000);
     mode = 0;
