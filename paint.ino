@@ -113,11 +113,6 @@ int psy;
 void DrawPipes() {
   ResetVisited();
   PowerRecurse(psx, psy);
-  if (PipesWin()) {
-    WinScreen();
-    StartScreen();
-    return;
-  }
   for (int i = 0; i < PX; i++)
     for (int o = 0; o < PY; o++) {
       if (i == psx && o == psy)
@@ -142,6 +137,11 @@ void DrawPipes() {
         tft.fillRect(PXR * i + PXR / 2, PYR * o + PYR / 2 - 2, PXR / 2, 4, color);
       }
     }
+  if (PipesWin()) {
+    WinScreen();
+    StartScreen();
+    return;
+  }
 
   TSPoint p;
   p.z = 0;
