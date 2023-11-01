@@ -43,6 +43,9 @@ uint16_t colors[] = {
   BLACK,
 };
 uint16_t ncolors = 8;
+
+#define HOROSHIY_ZVET 0x373F
+
 void setup() {
   Serial.begin(9600);  //Use serial monitor for debugging
   tft.reset();         //Always reset at start
@@ -61,6 +64,7 @@ void StartScreen() {
   tft.fillCircle(180, 40, 35, random(0xFFFF));
   random(0xFFFF);
   tft.fillCircle(180, 120, 35, random(0xFFFF));
+  tft.fillCircle(180, 200, 35, random(0xFFFF));
   mode = 0;
 }
 
@@ -72,6 +76,7 @@ void StartScreen() {
 // 4 - Snake
 // 5 - 2048
 // 6 - Pipes
+// 7 - Flappy Birds
 
 void loop() {
   if (mode == 0) {
@@ -86,13 +91,90 @@ void loop() {
     Draw2048();
   } else if (mode == 6) {
     DrawPipes();
+  } else if (mode == 7) {
+    DrawTT();
   } else {
     DrawPaint();
   }
 }
+bool nextCross;
+
+int tt[3][3];
+void StartTT() {
+  tft.fillRect(78, 40, 4, 240, ~RED);
+  tft.fillRect(78 + 80, 40, 4, 240, ~RED);
+  tft.fillRect(0, 40 + 78, 240, 4, ~RED);
+  tft.fillRect(0, 40 + 78 + 80, 240, 4, ~RED);
+
+  tft.fillRect(0, 38, 240, 4, ~RED);
+  tft.fillRect(0, 278, 240, 4, ~RED);
+  nextCross = true;
+  memset(&tt, 0, sizeof(tt));
+}
+
+
+void DrawTT() {
+  TSPoint p;
+  p.z = 0;
+  while (p.z < MINPRESSURE)
+    p = ReadPoint();
+
+  if (p.y < 40 || p.y > 240)
+    return;
+  int cx = p.x / 80;
+  int cy = (p.y - 40) / 80;
+  p.x = (cx)*80;
+  p.y = (cy)*80 + 40;
+  if (tt[cx][cy] != 0)
+    return;
+  tft.setTextSize(6);
+  if (nextCross) {
+    tt[cx][cy] = 1;
+    tft.setTextColor(~RED);
+    tft.setCursor(p.x + 20, p.y + 20);
+    tft.print("X");
+  } else {
+    tt[cx][cy] = 2;
+    tft.setTextColor(~GREEN);
+    tft.setCursor(p.x + 20, p.y + 20);
+    tft.print("O");
+  }
+
+  for (int i = 0; i < 3; i++) {
+    if (tt[0][i] != 0 && tt[0][i] == tt[1][i] && tt[0][i] == tt[2][i]) {
+      tft.fillRect(0, 38 + 40 + i * 80, 240, 4, ~BLACK);
+      delay(3000);
+      StartScreen();
+      return;
+    }
+    if (tt[i][0] != 0 && tt[i][0] == tt[i][1] && tt[i][0] == tt[i][2]) {
+      tft.fillRect(38 + i * 80, 40, 4, 240, ~BLACK);
+      delay(3000);
+      StartScreen();
+      return;
+    }
+  }
+  if (tt[0][0] != 0 && tt[0][0] == tt[1][1] && tt[0][0] == tt[2][2]) {
+    tft.drawLine(0, 40, 240, 240 + 40, ~BLACK);
+    delay(3000);
+    StartScreen();
+    return;
+  }
+  
+  if (tt[2][0] != 0 && tt[2][0] == tt[1][1] && tt[2][0] == tt[0][2]) {
+    tft.drawLine(240, 40, 0, 240 + 40, ~BLACK);
+    delay(3000);
+    StartScreen();
+    return;
+  }
+
+  delay(1000);
+
+  nextCross = !nextCross;
+}
 
 #define PX 4
-#define PY 5
+#define PY 6
 #define PXR (240 / PX)
 #define PYR (320 / PY)
 
@@ -519,8 +601,6 @@ void StartSnake() {
   GenerateFood();
 }
 
-#define HOROSHIY_ZVET 0x373F
-
 void SnakePixel(int x, int y, bool snake) {
   uint16_t color = PINK;
   if ((x + y) % 2 == 0)
@@ -784,6 +864,10 @@ void DrawSelection() {
         mode = 6;
         SeedPipes();
         tft.fillScreen(WHITE);
+      } else if (p.y < 3 * 320 / 4) {
+        mode = 7;
+        tft.fillScreen(HOROSHIY_ZVET);
+        StartTT();
       }
     }
   }
