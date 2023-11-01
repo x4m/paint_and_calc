@@ -59,6 +59,8 @@ void StartScreen() {
   tft.fillCircle(60, 200, 35, random(0xFFFF));
   tft.fillCircle(60, 280, 35, random(0xFFFF));
   tft.fillCircle(180, 40, 35, random(0xFFFF));
+  random(0xFFFF);
+  tft.fillCircle(180, 120, 35, random(0xFFFF));
   mode = 0;
 }
 
@@ -69,6 +71,7 @@ void StartScreen() {
 // 3 - Arkanoid mode
 // 4 - Snake
 // 5 - 2048
+// 6 - Pipes
 
 void loop() {
   if (mode == 0) {
@@ -81,19 +84,193 @@ void loop() {
     DrawSnake();
   } else if (mode == 5) {
     Draw2048();
+  } else if (mode == 6) {
+    DrawPipes();
   } else {
     DrawPaint();
   }
 }
 
-#define N2 4
+#define PX 4
+#define PY 5
+#define PXR (240 / PX)
+#define PYR (320 / PY)
+
+struct Pipe {
+  bool u;
+  bool d;
+  bool l;
+  bool r;
+  bool s;
+  bool v;
+  bool p;
+};
+
+Pipe pfld[PX][PY];
+int psx;
+int psy;
+
+void DrawPipes() {
+  ResetVisited();
+  PowerRecurse(psx, psy);
+  if (PipesWin()) {
+    WinScreen();
+    StartScreen();
+    return;
+  }
+  for (int i = 0; i < PX; i++)
+    for (int o = 0; o < PY; o++) {
+      if (i == psx && o == psy)
+        tft.fillRect(PXR * i + 1, PYR * o + 1, PXR - 2, PYR - 2, ~WHITE);
+      else
+        tft.fillRect(PXR * i + 1, PYR * o + 1, PXR - 2, PYR - 2, ~RED);
+
+      uint16_t color = ~BLACK;
+      if (pfld[i][o].p)
+        color = ~BLUE;
+
+      if (pfld[i][o].u) {
+        tft.fillRect(PXR * i + PXR / 2 - 2, PYR * o, 4, PYR / 2, color);
+      }
+      if (pfld[i][o].d) {
+        tft.fillRect(PXR * i + PXR / 2 - 2, PYR * o + PYR / 2, 4, PYR / 2, color);
+      }
+      if (pfld[i][o].l) {
+        tft.fillRect(PXR * i, PYR * o + PYR / 2 - 2, PXR / 2, 4, color);
+      }
+      if (pfld[i][o].r) {
+        tft.fillRect(PXR * i + PXR / 2, PYR * o + PYR / 2 - 2, PXR / 2, 4, color);
+      }
+    }
+
+  TSPoint p;
+  p.z = 0;
+  while (p.z < MINPRESSURE)
+    p = ReadPoint();
+
+  PipeRotate(p.x / PXR, p.y / PYR);
+}
+
+void PowerRecurse(int x, int y) {
+  pfld[x][y].p = true;
+  pfld[x][y].v = true;
+  if ((x > 0) && (!pfld[x - 1][y].v)) {
+    if (pfld[x - 1][y].r && pfld[x][y].l)
+      PowerRecurse(x - 1, y);
+  }
+  if ((y > 0) && (!pfld[x][y - 1].v)) {
+    if (pfld[x][y - 1].d && pfld[x][y].u)
+      PowerRecurse(x, y - 1);
+  }
+  if ((x < PX - 1) && (!pfld[x + 1][y].v)) {
+    if (pfld[x + 1][y].l && pfld[x][y].r)
+      PowerRecurse(x + 1, y);
+  }
+  if ((y < PY - 1) && (!pfld[x][y + 1].v)) {
+    if (pfld[x][y + 1].u && pfld[x][y].d)
+      PowerRecurse(x, y + 1);
+  }
+}
+
+void ResetVisited() {
+  for (int i = 0; i < PX; i++)
+    for (int o = 0; o < PY; o++) {
+      pfld[i][o].v = false;
+      pfld[i][o].p = false;
+    }
+}
+bool PipesWin() {
+  bool win = true;
+  for (int i = 0; i < PX; i++)
+    for (int o = 0; o < PY; o++) {
+      if (pfld[i][o].d || pfld[i][o].r || pfld[i][o].u || pfld[i][o].l)
+        if (!pfld[i][o].p)
+          win = false;
+    }
+  return win;
+}
+
+bool CanRecurse(int x, int y) {
+  if (x > 0 && (!pfld[x - 1][y].v))
+    return true;
+  if (y > 0 && (!pfld[x][y - 1].v))
+    return true;
+  if (x < PX - 1 && (!pfld[x + 1][y].v))
+    return true;
+  if (y < PY - 1 && (!pfld[x][y + 1].v))
+    return true;
+  return false;
+}
+
+
+void TryRecurse(int x, int y, int direction, int depth) {
+  if ((direction == 0) && (x > 0) && (!pfld[x - 1][y].v)) {
+    pfld[x][y].l = true;
+    pfld[x - 1][y].r = true;
+    pfld[x - 1][y].v = true;
+    SeedRecurse(x - 1, y, depth);
+  }
+  if ((direction == 1) && (y > 0) && (!pfld[x][y - 1].v)) {
+    pfld[x][y].u = true;
+    pfld[x][y - 1].d = true;
+    pfld[x][y - 1].v = true;
+    SeedRecurse(x, y - 1, depth);
+  }
+  if ((direction == 2) && (x < PX - 1) && (!pfld[x + 1][y].v)) {
+    pfld[x][y].r = true;
+    pfld[x + 1][y].l = true;
+    pfld[x + 1][y].v = true;
+    SeedRecurse(x + 1, y, depth);
+  }
+  if ((direction == 3) && (y < PY - 1) && (!pfld[x][y + 1].v)) {
+    pfld[x][y].d = true;
+    pfld[x][y + 1].u = true;
+    pfld[x][y + 1].v = true;
+    SeedRecurse(x, y + 1, depth);
+  }
+}
+
+void SeedRecurse(int x, int y, int depth) {
+  if (depth > 16)
+    return;
+
+  while (CanRecurse(x, y))
+    TryRecurse(x, y, random(4), depth + 1);
+}
+
+void PipeRotate(int x, int y) {
+  bool t = pfld[x][y].u;
+  pfld[x][y].u = pfld[x][y].l;
+  pfld[x][y].l = pfld[x][y].d;
+  pfld[x][y].d = pfld[x][y].r;
+  pfld[x][y].r = t;
+}
+
+void SeedPipes() {
+  memset(&pfld, 0, sizeof(pfld));
+  psx = random(PX);
+  psy = random(PY);
+  pfld[psx][psy].s = true;
+  pfld[psx][psy].v = true;
+  SeedRecurse(psx, psy, 0);
+
+
+  for (int i = 0; i < PX; i++)
+    for (int o = 0; o < PY; o++) {
+      int r = random(4);
+      for (int x = 0; x < r; x++)
+        PipeRotate(i, o);
+    }
+}
+
+#define N2 5
 
 int field[N2][N2];
 void SeedField() {
   for (int i = 0; i < N2; i++)
     for (int o = 0; o < N2; o++) {
       if (random(4) != 2)
-       continue;
+        continue;
       int p = random(5);
       if (p <= 1)
         field[i][o] = 0;
@@ -111,7 +288,7 @@ void DrawField() {
       tft.fillRect(rsize * i + 1, rsize * o + 40 + 1, rsize - 2, rsize - 2, ~RED);
       tft.setCursor(rsize * i + shift, rsize * o + 40 + shift);
       if (field[i][o]) {
-        if (field[i][o] > 512)
+        if (field[i][o] > 512 || N2 > 5)
           tft.setTextSize(1);
         else if (field[i][o] > 64)
           tft.setTextSize(2);
@@ -602,6 +779,10 @@ void DrawSelection() {
       if (p.y < 320 / 4) {
         mode = 5;
         SeedField();
+        tft.fillScreen(WHITE);
+      } else if (p.y < 2 * 320 / 4) {
+        mode = 6;
+        SeedPipes();
         tft.fillScreen(WHITE);
       }
     }
