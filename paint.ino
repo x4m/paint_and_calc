@@ -65,6 +65,7 @@ void StartScreen() {
   random(0xFFFF);
   tft.fillCircle(180, 120, 35, random(0xFFFF));
   tft.fillCircle(180, 200, 35, random(0xFFFF));
+  tft.fillCircle(180, 280, 35, random(0xFFFF));
   mode = 0;
 }
 
@@ -76,7 +77,8 @@ void StartScreen() {
 // 4 - Snake
 // 5 - 2048
 // 6 - Pipes
-// 7 - Flappy Birds
+// 7 - Tic Tac Toe
+// 8 - Minesweeper
 
 void loop() {
   if (mode == 0) {
@@ -93,10 +95,116 @@ void loop() {
     DrawPipes();
   } else if (mode == 7) {
     DrawTT();
+  } else if (mode == 8) {
+    DrawMS();
   } else {
     DrawPaint();
   }
 }
+
+bool dig;
+
+bool open[6][7];
+bool mine[6][7];
+bool mark[6][7];
+int mines;
+
+void StartMS() {
+  dig = false;
+  memset(&open, 0, sizeof(open));
+  memset(&mine, 0, sizeof(mine));
+  memset(&mark, 0, sizeof(mark));
+  mines = 0;
+  while (mines < 10) {
+    int x = random(6);
+    int y = random(7);
+    if (mine[x][y])
+      continue;
+    mine[x][y] = true;
+    mines++;
+  }
+}
+
+int CountMines(int x, int y) {
+  int r = 0;
+  if ((x > 0) && mine[x - 1][y])
+    r++;
+  if ((y > 0) && mine[x][y - 1])
+    r++;
+  if ((y > 0) && (x > 0) && mine[x - 1][y - 1])
+    r++;
+  if ((x < 5) && mine[x + 1][y])
+    r++;
+  if ((y < 6) && mine[x][y + 1])
+    r++;
+  if ((y < 6) && (x < 5) && mine[x + 1][y + 1])
+    r++;
+  if ((y > 0) && (x < 5) && mine[x + 1][y - 1])
+    r++;
+  if ((y < 6) && (x > 0) && mine[x - 1][y + 1])
+    r++;
+  return r;
+}
+
+void DrawMS() {
+  tft.fillRect(2, 2, 120 - 4, 40 - 4, ~WHITE);
+  tft.setCursor(10, 10);
+  tft.setTextSize(dig ? 4 : 3);
+  tft.setTextColor(dig ? ~RED : ~GREEN);
+  tft.print("DIG");
+
+  tft.fillRect(2 + 120, 2, 120 - 4, 40 - 4, ~WHITE);
+  tft.setCursor(10 + 120, 10);
+  tft.setTextSize(dig ? 3 : 4);
+  tft.setTextColor(dig ? ~GREEN : ~RED);
+  tft.print("MARK");
+
+  for (int i = 0; i < 6; i++)
+    for (int o = 0; o < 7; o++) {
+      if (mark[i][o]) {
+        tft.fillRect(i * 40 + 1, 40 + o * 40 + 1, 39, 39, ~RED);
+        continue;
+      }
+      if (!open[i][o]) {
+        tft.fillRect(i * 40 + 1, 40 + o * 40 + 1, 39, 39, ~GREEN);
+      } else {
+        if (mine[i][o]) {
+          tft.fillRect(i * 40 + 1, 40 + o * 40 + 1, 39, 39, ~BLACK);
+          tft.setCursor(i * 40 + 3, 40 + o * 40 + 3);
+          tft.setTextSize(2);
+          tft.setTextColor(~CYAN);
+          tft.print("BOOM");
+        } else {
+          int c = CountMines(i, o);
+          tft.fillRect(i * 40 + 1, 40 + o * 40 + 1, 39, 39, ~WHITE);
+          if (c != 0) {
+            tft.setCursor(i * 40 + 10, 50 + o * 40);
+            tft.setTextSize(4);
+            tft.setTextColor(~BLUE);
+            tft.print(c);
+          }
+        }
+      }
+    }
+
+  TSPoint p;
+  p.z = 0;
+  while (p.z < MINPRESSURE)
+    p = ReadPoint();
+
+  if (p.y < 40) {
+    dig = p.x < 120;
+    return;
+  }
+  int x = p.x / 40;
+  int y = p.y / 40 - 1;
+  if (dig) {
+    open[x][y] = true;  // Maybe boom
+  } else {
+    mark[x][y] = !mark[x][y];
+  }
+}
+
 bool nextCross;
 
 int tt[3][3];
@@ -160,7 +268,7 @@ void DrawTT() {
     StartScreen();
     return;
   }
-  
+
   if (tt[2][0] != 0 && tt[2][0] == tt[1][1] && tt[2][0] == tt[0][2]) {
     tft.drawLine(240, 40, 0, 240 + 40, ~BLACK);
     delay(3000);
@@ -173,8 +281,8 @@ void DrawTT() {
   nextCross = !nextCross;
 }
 
-#define PX 4
-#define PY 6
+#define PX 6
+#define PY 8
 #define PXR (240 / PX)
 #define PYR (320 / PY)
 
@@ -868,6 +976,10 @@ void DrawSelection() {
         mode = 7;
         tft.fillScreen(HOROSHIY_ZVET);
         StartTT();
+      } else {
+        mode = 8;
+        tft.fillScreen(HOROSHIY_ZVET);
+        StartMS();
       }
     }
   }
