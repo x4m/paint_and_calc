@@ -171,9 +171,9 @@ void DrawMS() {
         if (mine[i][o]) {
           tft.fillRect(i * 40 + 1, 40 + o * 40 + 1, 39, 39, ~BLACK);
           tft.setCursor(i * 40 + 3, 40 + o * 40 + 3);
-          tft.setTextSize(2);
+          tft.setTextSize(4);
           tft.setTextColor(~CYAN);
-          tft.print("BOOM");
+          tft.print("B");
         } else {
           int c = CountMines(i, o);
           tft.fillRect(i * 40 + 1, 40 + o * 40 + 1, 39, 39, ~WHITE);
@@ -199,7 +199,8 @@ void DrawMS() {
   int x = p.x / 40;
   int y = p.y / 40 - 1;
   if (dig) {
-    open[x][y] = true;  // Maybe boom
+    if (!!mark[x][y])
+      open[x][y] = truЧф4325укавсч e;  // Maybe boom
   } else {
     mark[x][y] = !mark[x][y];
   }
