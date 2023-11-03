@@ -46,8 +46,26 @@ uint16_t ncolors = 8;
 
 #define HOROSHIY_ZVET 0x373F
 
+
+const int xPin = A14;
+const int yPin = A15;
+const int buttonPin = 52;
+const int powerPin = 53;
+
+int xPosition = 0;
+int yPosition = 0;
+int buttonState = 0;
+bool highX = false, lowX = false, joystickActive = false;
+
 void setup() {
   Serial.begin(9600);  //Use serial monitor for debugging
+
+  pinMode(powerPin, OUTPUT);
+  digitalWrite(powerPin, HIGH);
+  pinMode(yPin, INPUT);
+  pinMode(yPin, INPUT);
+  pinMode(buttonPin, INPUT_PULLUP);
+
   tft.reset();         //Always reset at start
   tft.begin(0x9341);   // My LCD uses LIL9341 Interface driver IC
   tft.setRotation(0);  // I just roated so that the power jack faces up - optional
@@ -81,6 +99,16 @@ void StartScreen() {
 // 8 - Minesweeper
 
 void loop() {
+  xPosition = analogRead(xPin);
+  yPosition = analogRead(yPin);
+  buttonState = digitalRead(buttonPin);
+  if (xPosition < 100 || yPosition < 100)
+    lowX = true;
+  if (xPosition > 900 || yPosition > 900)
+    highX = true;
+  if (highX || lowX)
+    joystickActive = true;
+
   if (mode == 0) {
     DrawSelection();
   } else if (mode == 2) {
@@ -767,6 +795,16 @@ void FoodPixel(int x, int y) {
 void SnakeDetect() {
   TSPoint p = ReadPoint();
   int np = p.x;
+
+  if (joystickActive) {
+    p.x = 24 * xPosition / 102;
+    p.y = 32 * yPosition / 102;
+    if (abs(p.x - 120) > 30 || abs(p.y - 160) > 30)
+      p.z = MAXPRESSURE;
+    else
+      p.z = MINPRESSURE;
+  }
+
   if (p.z > MINPRESSURE) {
     int o_x = s_x;
     int o_y = s_y;
@@ -859,6 +897,10 @@ void DrawArkanoid() {
     StartScreen();
   }
   TSPoint p = ReadPoint();
+  if (joystickActive) {
+    p.x = 24 * xPosition / 100;
+    p.z = MAXPRESSURE;
+  }
   int np = p.x;
   if (p.z > MINPRESSURE && np != platform) {
     if (np < pl_wh)
