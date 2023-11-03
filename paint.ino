@@ -110,12 +110,12 @@ bool mark[6][7];
 int mines;
 
 void StartMS() {
-  dig = false;
+  dig = true;
   memset(&open, 0, sizeof(open));
   memset(&mine, 0, sizeof(mine));
   memset(&mark, 0, sizeof(mark));
   mines = 0;
-  while (mines < 10) {
+  while (mines < 8) {
     int x = random(6);
     int y = random(7);
     if (mine[x][y])
@@ -146,6 +146,19 @@ int CountMines(int x, int y) {
   return r;
 }
 
+void ShowBombs() {
+  for (int i = 0; i < 6; i++)
+    for (int o = 0; o < 7; o++) {
+      if (!mine[i][o] || open[i][o])
+        continue;
+      tft.fillRect(i * 40 + 1, 40 + o * 40 + 1, 39, 39, ~GREEN);
+      tft.setCursor(i * 40 + 10, 40 + o * 40 + 6);
+      tft.setTextSize(4);
+      tft.setTextColor(~CYAN);
+      tft.print("B");
+    }
+}
+
 void DrawMS() {
   tft.fillRect(2, 2, 120 - 4, 40 - 4, ~WHITE);
   tft.setCursor(10, 10);
@@ -159,8 +172,12 @@ void DrawMS() {
   tft.setTextColor(dig ? ~GREEN : ~RED);
   tft.print("MARK");
 
+  bool show_bobms = false;
+  bool win = true;
   for (int i = 0; i < 6; i++)
     for (int o = 0; o < 7; o++) {
+      if (!open[i][o] && !mine[i][o])
+        win = false;
       if (mark[i][o]) {
         tft.fillRect(i * 40 + 1, 40 + o * 40 + 1, 39, 39, ~RED);
         continue;
@@ -169,10 +186,11 @@ void DrawMS() {
         tft.fillRect(i * 40 + 1, 40 + o * 40 + 1, 39, 39, ~GREEN);
       } else {
         if (mine[i][o]) {
+          show_bobms = true;
           tft.fillRect(i * 40 + 1, 40 + o * 40 + 1, 39, 39, ~BLACK);
-          tft.setCursor(i * 40 + 3, 40 + o * 40 + 3);
+          tft.setCursor(i * 40 + 10, 40 + o * 40 + 6);
           tft.setTextSize(4);
-          tft.setTextColor(~CYAN);
+          tft.setTextColor(~RED);
           tft.print("B");
         } else {
           int c = CountMines(i, o);
@@ -186,6 +204,15 @@ void DrawMS() {
         }
       }
     }
+  if (show_bobms || win) {
+    ShowBombs();
+    delay(3000);
+    if (win) {
+      WinScreen();
+      delay(2000);
+    }
+    StartScreen();
+  }
 
   TSPoint p;
   p.z = 0;
@@ -198,11 +225,26 @@ void DrawMS() {
   }
   int x = p.x / 40;
   int y = p.y / 40 - 1;
+  click(x, y);
+}
+
+void click(int x, int y) {
   if (dig) {
-    if (!!mark[x][y])
-      open[x][y] = truЧф4325укавсч e;  // Maybe boom
+    if (!mark[x][y]) {
+      open[x][y] = true;
+      if (!mine[x][y] && (CountMines(x, y) == 0)) {
+        for (int i = max(x - 1, 0); i <= min(x + 1, 5); i++)
+          for (int o = max(y - 1, 0); o <= min(y + 1, 6); o++) {
+            if (x != i || y != o) {
+              if (!open[i][o])
+                click(i, o);
+            }
+          }
+      }
+    }
   } else {
-    mark[x][y] = !mark[x][y];
+    if (!open[x][y])
+      mark[x][y] = !mark[x][y];
   }
 }
 
@@ -282,8 +324,8 @@ void DrawTT() {
   nextCross = !nextCross;
 }
 
-#define PX 6
-#define PY 8
+#define PX 4
+#define PY 5
 #define PXR (240 / PX)
 #define PYR (320 / PY)
 
@@ -422,7 +464,7 @@ void TryRecurse(int x, int y, int direction, int depth) {
 }
 
 void SeedRecurse(int x, int y, int depth) {
-  if (depth > 16)
+  if (depth > 10)
     return;
 
   while (CanRecurse(x, y))
